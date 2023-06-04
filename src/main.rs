@@ -49,7 +49,7 @@ pub fn spawn_playhead(
                 ..default()
             },
             transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
-            ..Default::default()
+            ..default()
         })
         .insert(Playhead {
             position: Vec2::new(1.0, 0.0),
