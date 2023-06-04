@@ -11,8 +11,9 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_startup_system(spawn_camera)
         .add_startup_system(spawn_playhead)
-        .add_startup_system(spawn_notes)
+        .add_startup_system(spawn_random_notes)
         .add_system(playhead_movement)
+        .add_system(note_struck)
         .run();
 }
 
@@ -82,7 +83,7 @@ pub fn playhead_movement(
     }
 }
 
-pub fn spawn_notes(
+pub fn spawn_random_notes(
     mut commands: Commands,
     window_query: Query<&Window, With<PrimaryWindow>>,
     asset_server: Res<AssetServer>,
@@ -106,5 +107,20 @@ pub fn spawn_notes(
             .insert(Note {
                 position: Vec2::new(1.0, 0.0),
             });
+    }
+}
+
+pub fn note_struck(
+    playhead_query: Query<&Transform, With<Playhead>>,
+    note_query: Query<&Transform, With<Note>>,
+) {
+    if let Ok(playhead_transform) = playhead_query.get_single() {
+        for note_transform in note_query.iter() {
+            if playhead_transform.translation.x > note_transform.translation.x - 5.0
+                && playhead_transform.translation.x < note_transform.translation.x + 5.0
+            {
+                println!("Note struck!");
+            }
+        }
     }
 }
