@@ -46,7 +46,6 @@ pub struct Note {
 pub fn spawn_playhead(
     mut commands: Commands,
     window_query: Query<&Window, With<PrimaryWindow>>,
-    asset_server: Res<AssetServer>,
 ) {
     let window = window_query.get_single().unwrap();
 
@@ -86,7 +85,6 @@ pub fn playhead_movement(
 pub fn spawn_random_notes(
     mut commands: Commands,
     window_query: Query<&Window, With<PrimaryWindow>>,
-    asset_server: Res<AssetServer>,
 ) {
     let window = window_query.get_single().unwrap();
 
