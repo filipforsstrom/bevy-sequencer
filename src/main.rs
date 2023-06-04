@@ -1,60 +1,72 @@
 //! Renders a 2D scene containing a single, moving sprite.
 
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
+
+const PLAYHEAD_SPEED: f32 = 1000.0;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_startup_system(setup)
-        .add_system(sprite_movement)
+        .add_startup_system(spawn_camera)
+        .add_startup_system(spawn_playhead)
+        .add_system(playhead_movement)
         .run();
 }
 
-#[derive(Component)]
-enum Direction {
-    Left,
-    Right,
+pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
+    // let windows = window_query.get_single().unwrap();
+
+    // commands.spawn(Camera2dBundle {
+    //     transform: Transform::from_xyz(windows.width() / 2.0, windows.height() / 2.0, 100.0),
+    //     ..default()
+    // });
+
+    commands.spawn(Camera2dBundle::default());
 }
 
 #[derive(Component)]
-struct PlayHead;
+pub struct Playhead {
+    pub position: Vec2,
+}
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2dBundle::default());
-    // commands.spawn((
-    //     SpriteBundle {
-    //         texture: asset_server.load("branding/icon.png"),
-    //         transform: Transform::from_xyz(100., 0., 0.),
-    //         ..default()
-    //     },
-    //     Direction::Left,
-    // ));
+pub fn spawn_playhead(
+    mut commands: Commands,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    asset_server: Res<AssetServer>,
+) {
+    let window = window_query.get_single().unwrap();
+    let window_height = window.height();
 
     // Rectangle
-    commands.spawn(SpriteBundle {
-        sprite: Sprite {
-            color: Color::rgb(0.25, 0.25, 0.75),
-            custom_size: Some(Vec2::new(50.0, 100.0)),
-            ..default()
-        },
-        transform: Transform::from_translation(Vec3::new(-50., 0., 0.)),
-        ..default()
-    });
+    commands
+        .spawn(SpriteBundle {
+            sprite: Sprite {
+                color: Color::rgb(1., 0., 0.),
+                custom_size: Some(Vec2::new(5.0, window_height)),
+                ..default()
+            },
+            transform: Transform::from_translation(Vec3::new(-300., 0., 0.)),
+            ..Default::default()
+        })
+        .insert(Playhead {
+            position: Vec2::new(1.0, 0.0),
+        });
 }
 
-/// The sprite is animated by changing its translation depending on the time that has passed since
-/// the last frame.
-fn sprite_movement(time: Res<Time>, mut sprite_position: Query<(&mut Direction, &mut Transform)>) {
-    for (mut logo, mut transform) in &mut sprite_position {
-        match *logo {
-            Direction::Left => transform.translation.x += 150. * time.delta_seconds(),
-            Direction::Right => transform.translation.x -= 150. * time.delta_seconds(),
-        }
+pub fn playhead_movement(
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    mut playhead_query: Query<(&mut Transform, &mut Playhead)>,
+    time: Res<Time>,
+) {
+    let window = window_query.get_single().unwrap();
+    let window_width = window.width();
 
-        if transform.translation.x > 200. {
-            *logo = Direction::Right;
-        } else if transform.translation.x < -200. {
-            *logo = Direction::Left;
+    for (mut transform, playhead) in playhead_query.iter_mut() {
+        let position = Vec3::new(playhead.position.x, playhead.position.y, 0.0);
+        transform.translation += position * PLAYHEAD_SPEED * time.delta_seconds();
+
+        if transform.translation.x > window_width {
+            transform.translation.x = 0.;
         }
     }
 }
