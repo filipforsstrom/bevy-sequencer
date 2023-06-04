@@ -22,13 +22,6 @@ pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<Pr
         transform: Transform::from_xyz(windows.width() / 2.0, windows.height() / 2.0, 100.0),
         ..default()
     });
-
-    // commands.spawn(Camera2dBundle::default());
-
-    // commands.spawn(Camera2dBundle {
-    //     transform: Transform::from_xyz(0.0, 0.0, 999.9),
-    //     ..default()
-    // });
 }
 
 #[derive(Component)]
