@@ -1,4 +1,5 @@
 use bevy::{prelude::*, window::PrimaryWindow};
+use bevy_egui::{EguiPlugin, EguiContexts, egui};
 use rand::random;
 
 const PLAYHEAD_SPEED: f32 = 500.0;
@@ -7,12 +8,20 @@ const NUMBER_OF_RANDOM_NOTES: usize = 10;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugin(EguiPlugin)
+        .add_system(ui_example_system)
         .add_startup_system(spawn_camera)
         .add_startup_system(spawn_playhead)
         .add_startup_system(spawn_random_notes)
         .add_system(playhead_movement)
         .add_system(note_struck)
         .run();
+}
+
+fn ui_example_system(mut contexts: EguiContexts) {
+    egui::Window::new("Hello").show(contexts.ctx_mut(), |ui| {
+        ui.label("world");
+    });
 }
 
 pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
@@ -34,10 +43,7 @@ pub struct Note {
     pub position: Vec2,
 }
 
-pub fn spawn_playhead(
-    mut commands: Commands,
-    window_query: Query<&Window, With<PrimaryWindow>>,
-) {
+pub fn spawn_playhead(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
     let window = window_query.get_single().unwrap();
 
     // Rectangle
