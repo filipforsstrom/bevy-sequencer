@@ -1,5 +1,3 @@
-//! Renders a 2D scene containing a single, moving sprite.
-
 use bevy::{prelude::*, window::PrimaryWindow};
 use rand::random;
 
