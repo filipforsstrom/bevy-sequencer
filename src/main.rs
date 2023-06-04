@@ -2,7 +2,7 @@
 
 use bevy::{prelude::*, window::PrimaryWindow};
 
-const PLAYHEAD_SPEED: f32 = 1000.0;
+const PLAYHEAD_SPEED: f32 = 500.0;
 
 fn main() {
     App::new()
@@ -21,7 +21,12 @@ pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<Pr
     //     ..default()
     // });
 
-    commands.spawn(Camera2dBundle::default());
+    // commands.spawn(Camera2dBundle::default());
+
+    commands.spawn(Camera2dBundle {
+        transform: Transform::from_xyz(0.0, 0.0, 999.9),
+        ..default()
+    });
 }
 
 #[derive(Component)]
@@ -35,17 +40,16 @@ pub fn spawn_playhead(
     asset_server: Res<AssetServer>,
 ) {
     let window = window_query.get_single().unwrap();
-    let window_height = window.height();
 
     // Rectangle
     commands
         .spawn(SpriteBundle {
             sprite: Sprite {
                 color: Color::rgb(1., 0., 0.),
-                custom_size: Some(Vec2::new(5.0, window_height)),
+                custom_size: Some(Vec2::new(5.0, window.height())),
                 ..default()
             },
-            transform: Transform::from_translation(Vec3::new(-300., 0., 0.)),
+            transform: Transform::from_translation(Vec3::new(window.width() / -2., 0., 0.)),
             ..Default::default()
         })
         .insert(Playhead {
@@ -59,14 +63,13 @@ pub fn playhead_movement(
     time: Res<Time>,
 ) {
     let window = window_query.get_single().unwrap();
-    let window_width = window.width();
 
     for (mut transform, playhead) in playhead_query.iter_mut() {
         let position = Vec3::new(playhead.position.x, playhead.position.y, 0.0);
         transform.translation += position * PLAYHEAD_SPEED * time.delta_seconds();
 
-        if transform.translation.x > window_width {
-            transform.translation.x = 0.;
+        if transform.translation.x > window.width() / 2. {
+            transform.translation.x = window.width() / -2.;
         }
     }
 }
