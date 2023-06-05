@@ -1,9 +1,9 @@
 use bevy::{prelude::*, window::PrimaryWindow};
-use bevy_egui::{EguiPlugin, EguiContexts, egui};
+use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use rand::random;
 
 const PLAYHEAD_SPEED: f32 = 500.0;
-const NUMBER_OF_RANDOM_NOTES: usize = 10;
+const NUMBER_OF_RANDOM_NOTES: usize = 2;
 
 fn main() {
     App::new()
@@ -107,14 +107,14 @@ pub fn spawn_random_notes(
 
 pub fn note_struck(
     playhead_query: Query<&Transform, With<Playhead>>,
-    note_query: Query<&Transform, With<Note>>,
+    note_query: Query<(Entity, &Transform), With<Note>>,
 ) {
     if let Ok(playhead_transform) = playhead_query.get_single() {
-        for note_transform in note_query.iter() {
+        for (note_entity, note_transform) in note_query.iter() {
             if playhead_transform.translation.x > note_transform.translation.x - 5.0
                 && playhead_transform.translation.x < note_transform.translation.x + 5.0
             {
-                println!("Note struck!");
+                println!("{}", note_entity.index());
             }
         }
     }
