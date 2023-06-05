@@ -13,6 +13,8 @@ fn main() {
         .add_plugin(MidiOutputPlugin)
         .add_system(ui_example_system)
         .add_system(connect)
+        .add_event::<MidiOutEvent>()
+        .add_system(midi_out)
         .add_startup_system(spawn_camera)
         .add_startup_system(spawn_playhead)
         .add_startup_system(spawn_random_notes)
@@ -121,6 +123,7 @@ pub fn spawn_random_notes(
 }
 
 pub fn note_struck(
+    mut event_midi_out: EventWriter<MidiOutEvent>,
     playhead_query: Query<&Transform, With<Playhead>>,
     note_query: Query<(Entity, &Transform), With<Note>>,
 ) {
@@ -129,8 +132,17 @@ pub fn note_struck(
             if playhead_transform.translation.x > note_transform.translation.x - 5.0
                 && playhead_transform.translation.x < note_transform.translation.x + 5.0
             {
-                println!("{}", note_entity.index());
+                // println!("{}", note_entity.index());
+                event_midi_out.send(MidiOutEvent(note_entity));
             }
         }
+    }
+}
+
+pub struct MidiOutEvent(Entity);
+
+fn midi_out(mut event_midi_out: EventReader<MidiOutEvent>) {
+    for ev in event_midi_out.iter() {
+        println!("Midi out: {:?}", ev.0);
     }
 }
