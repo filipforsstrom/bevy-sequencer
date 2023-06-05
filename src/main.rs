@@ -1,5 +1,6 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy_midi::prelude::*;
 use rand::random;
 
 const PLAYHEAD_SPEED: f32 = 500.0;
@@ -9,7 +10,9 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
+        .add_plugin(MidiOutputPlugin)
         .add_system(ui_example_system)
+        .add_system(connect)
         .add_startup_system(spawn_camera)
         .add_startup_system(spawn_playhead)
         .add_startup_system(spawn_random_notes)
@@ -18,10 +21,22 @@ fn main() {
         .run();
 }
 
-fn ui_example_system(mut contexts: EguiContexts) {
+fn ui_example_system(mut contexts: EguiContexts, output: Res<MidiOutput>) {
     egui::Window::new("Hello").show(contexts.ctx_mut(), |ui| {
         ui.label("world");
+        for (i, (name, _)) in output.ports().iter().enumerate() {
+            ui.label(format!("Port {:?}: {:?}", i, name));
+        }
     });
+}
+
+fn connect(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
+    if input.pressed(KeyCode::C) {
+        if let Some((_, port)) = output.ports().get(0) {
+            output.connect(port.clone());
+            print!("Connected");
+        }
+    }
 }
 
 pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
