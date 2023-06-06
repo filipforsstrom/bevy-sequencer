@@ -58,6 +58,20 @@ pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<Pr
 #[derive(Component)]
 pub struct Playhead {
     pub position: Vec2,
+    pub direction: PlayheadDirection,
+    pub current_direction: PlayheadDirection,
+}
+
+pub enum PlayheadDirection {
+    Right,
+    Left,
+    Pendulum,
+}
+
+impl Default for PlayheadDirection {
+    fn default() -> Self {
+        PlayheadDirection::Right
+    }
 }
 
 #[derive(Component)]
@@ -87,6 +101,8 @@ pub fn spawn_playhead(mut commands: Commands, window_query: Query<&Window, With<
         })
         .insert(Playhead {
             position: Vec2::new(1.0, 0.0),
+            direction: PlayheadDirection::Pendulum,
+            current_direction: PlayheadDirection::Right,
         });
 }
 
@@ -97,12 +113,41 @@ pub fn playhead_movement(
 ) {
     let window = window_query.get_single().unwrap();
 
-    for (mut transform, playhead) in playhead_query.iter_mut() {
+    for (mut transform, mut playhead) in playhead_query.iter_mut() {
         let position = Vec3::new(playhead.position.x, playhead.position.y, 0.0);
-        transform.translation += position * PLAYHEAD_SPEED * time.delta_seconds();
 
-        if transform.translation.x > window.width() {
-            transform.translation.x = 0.;
+        match &playhead.direction {
+            PlayheadDirection::Right => {
+                transform.translation += position * PLAYHEAD_SPEED * time.delta_seconds();
+
+                if transform.translation.x > window.width() {
+                    transform.translation.x = 0.;
+                }
+            }
+            PlayheadDirection::Left => {
+                transform.translation -= position * PLAYHEAD_SPEED * time.delta_seconds();
+
+                if transform.translation.x > 0. {
+                    transform.translation.x = window.width();
+                }
+            }
+            PlayheadDirection::Pendulum => match &playhead.current_direction {
+                PlayheadDirection::Right => {
+                    transform.translation += position * PLAYHEAD_SPEED * time.delta_seconds();
+
+                    if transform.translation.x > window.width() {
+                        playhead.current_direction = PlayheadDirection::Left;
+                    }
+                }
+                PlayheadDirection::Left => {
+                    transform.translation -= position * PLAYHEAD_SPEED * time.delta_seconds();
+
+                    if transform.translation.x < 0. {
+                        playhead.current_direction = PlayheadDirection::Right;
+                    }
+                }
+                PlayheadDirection::Pendulum => {}
+            },
         }
     }
 }
@@ -121,7 +166,7 @@ pub fn spawn_random_notes(
             .spawn(SpriteBundle {
                 sprite: Sprite {
                     color: Color::rgb(0., 1., 0.),
-                    custom_size: Some(Vec2::new(10., 10.)),
+                    custom_size: Some(Vec2::new(100., 10.)),
                     ..default()
                 },
                 transform: Transform::from_xyz(random_x, random_y, 0.0),
