@@ -20,6 +20,7 @@ fn main() {
         .add_startup_system(spawn_playhead)
         .add_startup_system(spawn_random_notes)
         .add_system(playhead_movement)
+        .add_system(note_pitch)
         .add_system(note_struck)
         .run();
 }
@@ -62,6 +63,7 @@ pub struct Playhead {
 #[derive(Component)]
 pub struct Note {
     pub position: Vec2,
+    pub pitch: u8,
 }
 
 #[derive(Resource, Default, Debug)]
@@ -127,8 +129,29 @@ pub fn spawn_random_notes(
             })
             .insert(Note {
                 position: Vec2::new(1.0, 0.0),
+                pitch: 60,
             });
     }
+}
+
+pub fn note_pitch(
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    mut note_query: Query<(&mut Note, &Transform), With<Note>>,
+) {
+    let window = window_query.get_single().unwrap();
+
+    for (mut note, note_transform) in note_query.iter_mut() {
+        let note_y_position_as_midi =
+            map_to_midi_range(note_transform.translation.y, 0., window.height(), 0, 127);
+
+        note.pitch = note_y_position_as_midi;
+    }
+}
+
+fn map_to_midi_range(value: f32, old_min: f32, old_max: f32, new_min: u8, new_max: u8) -> u8 {
+    let midi_value = ((value - old_min) * (new_max as f32 - new_min as f32)) / (old_max - old_min)
+        + new_min as f32;
+    midi_value.max(0.0).min(127.0) as u8
 }
 
 pub fn note_struck(
@@ -150,8 +173,16 @@ pub fn note_struck(
 
 pub struct MidiOutEvent(Entity);
 
-fn midi_out(mut event_midi_out: EventReader<MidiOutEvent>) {
+fn midi_out(
+    note_query: Query<&Note, With<Note>>,
+    mut event_midi_out: EventReader<MidiOutEvent>,
+    output: ResMut<MidiOutput>,
+) {
     for ev in event_midi_out.iter() {
-        println!("Midi out: {:?}", ev.0);
+        if let Ok(note) = note_query.get(ev.0) {
+            output.send([0b1001_0000, note.pitch, 127].into()); // Note on, channel 1, max velocity
+            output.send([0b1000_0000, note.pitch, 127].into()); // Note off, channel 1, max velocity
+            println!("Midi out: {:?}", note.pitch);
+        }
     }
 }
