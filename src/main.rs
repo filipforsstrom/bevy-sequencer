@@ -225,9 +225,10 @@ fn midi_out(
 ) {
     for ev in event_midi_out.iter() {
         if let Ok(note) = note_query.get(ev.0) {
-            output.send([0b1001_0000, note.pitch, 127].into()); // Note on, channel 1, max velocity
-            output.send([0b1000_0000, note.pitch, 127].into()); // Note off, channel 1, max velocity
-            println!("Midi out: {:?}", note.pitch);
+            output.send([0b1001_0000, note.pitch, 127].into()); // Note on, channel 1
+            println!("Midi note on: {}", note.pitch);
+            output.send([0b1001_0000, note.pitch, 0].into()); // Note off, channel 1
+            println!("Midi note off: {}", note.pitch);
         }
     }
 }
