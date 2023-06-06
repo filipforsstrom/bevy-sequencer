@@ -11,6 +11,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
         .add_plugin(MidiOutputPlugin)
+        .init_resource::<MidiSettings>()
         .add_system(ui_example_system)
         .add_system(connect)
         .add_event::<MidiOutEvent>()
@@ -32,12 +33,15 @@ fn ui_example_system(mut contexts: EguiContexts, output: Res<MidiOutput>) {
     });
 }
 
-fn connect(input: Res<Input<KeyCode>>, output: Res<MidiOutput>) {
-    if input.pressed(KeyCode::C) {
-        if let Some((_, port)) = output.ports().get(0) {
-            output.connect(port.clone());
-            print!("Connected");
-        }
+fn connect(output: Res<MidiOutput>, mut midi_settings: ResMut<MidiSettings>) {
+    if midi_settings.connected {
+        return;
+    }
+
+    if let Some((_, port)) = output.ports().get(0) {
+        output.connect(port.clone());
+        midi_settings.connected = true;
+        println!("Connected");
     }
 }
 
@@ -58,6 +62,11 @@ pub struct Playhead {
 #[derive(Component)]
 pub struct Note {
     pub position: Vec2,
+}
+
+#[derive(Resource, Default, Debug)]
+struct MidiSettings {
+    connected: bool,
 }
 
 pub fn spawn_playhead(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
