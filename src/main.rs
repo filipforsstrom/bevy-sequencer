@@ -1,4 +1,9 @@
-use bevy::{prelude::*, sprite::collide_aabb::collide, window::PrimaryWindow};
+use bevy::{
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    prelude::*,
+    sprite::collide_aabb::collide,
+    window::PrimaryWindow,
+};
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_midi::prelude::*;
 use rand::random;
@@ -12,17 +17,23 @@ fn main() {
         .add_plugin(EguiPlugin)
         .add_plugin(MidiOutputPlugin)
         .init_resource::<MidiSettings>()
+        .init_resource::<Cartesian>()
         .add_system(ui_example_system)
         .add_system(connect)
         .add_event::<MidiOutEvent>()
         .add_system(midi_out)
         .add_startup_system(spawn_camera)
         .add_startup_system(spawn_playhead)
-        .add_startup_system(spawn_random_notes)
+        // .add_startup_system(spawn_random_notes)
         .add_system(playhead_movement)
         .add_system(note_pitch)
         .add_system(note_struck)
         .add_system(note_collision)
+        .add_startup_system(load_image)
+        // .add_plugin(LogDiagnosticsPlugin::default())
+        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_startup_system(sequencer_timer_setup)
+        .add_system(tick)
         .run();
 }
 
@@ -253,4 +264,58 @@ fn midi_out(
             println!("Midi note off: {}", note.pitch);
         }
     }
+}
+
+fn load_image(
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+) {
+    let window = window_query.get_single().unwrap();
+
+    commands.spawn(SpriteBundle {
+        texture: asset_server.load("images/1234.png"),
+        transform: Transform::from_translation(Vec3::new(
+            window.width() / 2.,
+            window.height() / 2.,
+            0.,
+        )),
+        ..default()
+    });
+}
+
+#[derive(Resource, Default, Debug)]
+struct Cartesian {
+    position: Vec<(i32, i32)>,
+    size: usize,
+}
+
+fn cartesian_setup(mut cartesian_settings: ResMut<Cartesian>) {
+    cartesian_settings.size = 4;
+    cartesian_settings.position = vec![(0, 0); cartesian_settings.size];
+}
+
+use std::time::Duration;
+
+#[derive(Resource)]
+struct SequencerTimer {
+    /// How often to spawn a new bomb? (repeating timer)
+    timer: Timer,
+}
+
+fn tick(mut commands: Commands, time: Res<Time>, mut config: ResMut<SequencerTimer>) {
+    // tick the timer
+    config.timer.tick(time.delta());
+
+    if config.timer.finished() {
+        println!("Tick");
+    }
+}
+
+/// Configure our bomb spawning algorithm
+fn sequencer_timer_setup(mut commands: Commands) {
+    commands.insert_resource(SequencerTimer {
+        // create the repeating timer
+        timer: Timer::new(Duration::from_secs(1), TimerMode::Repeating),
+    })
 }
