@@ -10,6 +10,8 @@ use rand::random;
 
 const PLAYHEAD_SPEED: f32 = 500.0;
 const NUMBER_OF_RANDOM_NOTES: usize = 10;
+const GRID_SIZE_X: usize = 4;
+const GRID_SIZE_Y: usize = 4;
 
 fn main() {
     App::new()
@@ -29,9 +31,10 @@ fn main() {
         .add_system(note_pitch)
         .add_system(note_struck)
         .add_system(note_collision)
-        .add_startup_system(load_image)
+        // .add_startup_system(load_image)
         // .add_plugin(LogDiagnosticsPlugin::default())
         // .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_startup_system(cartesian_setup)
         .add_startup_system(sequencer_timer_setup)
         .add_system(tick)
         .run();
@@ -291,8 +294,8 @@ struct Cartesian {
 }
 
 fn cartesian_setup(mut cartesian_settings: ResMut<Cartesian>) {
-    cartesian_settings.size = 4;
-    cartesian_settings.position = vec![(0, 0); cartesian_settings.size];
+    cartesian_settings.size = 1;
+    cartesian_settings.position = vec![(0, 0)];
 }
 
 use std::time::Duration;
@@ -303,16 +306,27 @@ struct SequencerTimer {
     timer: Timer,
 }
 
-fn tick(mut commands: Commands, time: Res<Time>, mut config: ResMut<SequencerTimer>) {
+fn tick(
+    time: Res<Time>,
+    mut config: ResMut<SequencerTimer>,
+    mut cartesian_settings: ResMut<Cartesian>,
+) {
     // tick the timer
     config.timer.tick(time.delta());
 
     if config.timer.finished() {
-        println!("Tick");
+        cartesian_settings.position[0].0 += 1;
+        cartesian_settings.position[0].1 += 1;
+        if cartesian_settings.position[0].0 >= cartesian_settings.size as i32 {
+            cartesian_settings.position[0].0 = 0;
+        }
+        if cartesian_settings.position[0].1 >= cartesian_settings.size as i32 {
+            cartesian_settings.position[0].1 = 0;
+        }
+        println!("{:?}", cartesian_settings.position);
     }
 }
 
-/// Configure our bomb spawning algorithm
 fn sequencer_timer_setup(mut commands: Commands) {
     commands.insert_resource(SequencerTimer {
         // create the repeating timer
