@@ -1,10 +1,10 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{prelude::*, sprite::collide_aabb::collide, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_midi::prelude::*;
 use rand::random;
 
 const PLAYHEAD_SPEED: f32 = 500.0;
-const NUMBER_OF_RANDOM_NOTES: usize = 2;
+const NUMBER_OF_RANDOM_NOTES: usize = 10;
 
 fn main() {
     App::new()
@@ -22,6 +22,7 @@ fn main() {
         .add_system(playhead_movement)
         .add_system(note_pitch)
         .add_system(note_struck)
+        .add_system(note_collision)
         .run();
 }
 
@@ -211,6 +212,27 @@ pub fn note_struck(
             {
                 // println!("{}", note_entity.index());
                 event_midi_out.send(MidiOutEvent(note_entity));
+            }
+        }
+    }
+}
+
+pub fn note_collision(
+    mut commands: Commands,
+    mut note_query: Query<(Entity, &mut Note, &Transform), With<Note>>,
+    playhead_query: Query<&Transform, With<Playhead>>,
+) {
+    if let Ok(playhead_transform) = playhead_query.get_single() {
+        for (note_entity, mut note, note_transform) in note_query.iter_mut() {
+            let collision = collide(
+                playhead_transform.translation,
+                Vec2::new(5.0, 5.0),
+                note_transform.translation,
+                Vec2::new(100.0, 10.0),
+            );
+            if collision.is_some() {
+                println!("Collision!");
+                // commands.entity(note_entity).despawn();
             }
         }
     }
