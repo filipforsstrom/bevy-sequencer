@@ -2,11 +2,13 @@ mod control_panel;
 mod midi;
 mod note;
 mod playhead;
+mod sequence;
 
 use control_panel::ControlPanelPlugin;
 use midi::MidiPlugin;
 use note::NotePlugin;
 use playhead::PlayheadPlugin;
+use sequence::SequencePlugin;
 
 use bevy::prelude::*;
 
@@ -17,6 +19,6 @@ impl Plugin for SequencerPlugin {
         app.add_plugin(ControlPanelPlugin);
         app.add_plugin(MidiPlugin);
         app.add_plugin(PlayheadPlugin);
-        app.add_plugin(NotePlugin);
+        app.add_plugin(NotePlugin).add_plugin(SequencePlugin);
     }
 }

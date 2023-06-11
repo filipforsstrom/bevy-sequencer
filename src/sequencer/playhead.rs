@@ -1,8 +1,6 @@
 use bevy::{prelude::*, sprite::collide_aabb::collide, window::PrimaryWindow};
 
-use crate::sequencer::midi;
-
-use super::note::{self, Collider, Note, NoteOn};
+use super::note::{Collider, Note, NoteOn};
 
 const PLAYHEAD_SPEED: f32 = 500.0;
 
@@ -15,7 +13,7 @@ impl Plugin for PlayheadPlugin {
             .add_startup_system(spawn_playhead)
             .add_system(playhead_movement)
             .add_system(check_for_collisions)
-            .add_system(note_struck)
+            // .add_system(note_struck)
             .add_system(check_note_on);
     }
 }
@@ -110,25 +108,23 @@ pub fn playhead_movement(
     }
 }
 
-pub fn note_struck(
-    mut event_midi_out: EventWriter<NoteOnEvent>,
-    playhead_query: Query<&Transform, With<Playhead>>,
-    note_query: Query<(Entity, &Transform), With<Note>>,
-) {
-    if let Ok(playhead_transform) = playhead_query.get_single() {
-        for (note_entity, note_transform) in note_query.iter() {
-            if playhead_transform.translation.x > note_transform.translation.x - 5.0
-                && playhead_transform.translation.x < note_transform.translation.x + 5.0
-            {
-                // println!("{}", note_entity.index());
-                // event_midi_out.send(NoteOnEvent(note_entity));
-            }
-        }
-    }
-}
+// pub fn note_struck(
+//     playhead_query: Query<&Transform, With<Playhead>>,
+//     note_query: Query<(Entity, &Transform), With<Note>>,
+// ) {
+//     if let Ok(playhead_transform) = playhead_query.get_single() {
+//         for (note_entity, note_transform) in note_query.iter() {
+//             if playhead_transform.translation.x > note_transform.translation.x - 5.0
+//                 && playhead_transform.translation.x < note_transform.translation.x + 5.0
+//             {
+//                 // println!("{}", note_entity.index());
+//                 // event_midi_out.send(NoteOnEvent(note_entity));
+//             }
+//         }
+//     }
+// }
 
 fn check_for_collisions(
-    mut commands: Commands,
     playheads_query: Query<(Entity, &Transform), With<Playhead>>,
     mut collider_query: Query<(Entity, &Transform, &mut NoteOn), With<Collider>>,
 ) {

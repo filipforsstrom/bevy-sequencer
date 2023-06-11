@@ -1,7 +1,9 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use rand::random;
 
-const NUMBER_OF_RANDOM_NOTES: usize = 20;
+use super::sequence::{self, GlobalSequencerSettings};
+
+const NUMBER_OF_RANDOM_NOTES: usize = 8;
 
 pub struct NotePlugin;
 
@@ -61,12 +63,22 @@ pub fn spawn_random_notes(
 pub fn note_pitch(
     window_query: Query<&Window, With<PrimaryWindow>>,
     mut note_query: Query<(&mut Note, &Transform), With<Note>>,
+    sequencer_settings: Res<GlobalSequencerSettings>,
 ) {
     let window = window_query.get_single().unwrap();
+    let window_min = 0. as f32;
+    let window_max = window.height();
+    let min = sequencer_settings.pitch_min;
+    let max = sequencer_settings.pitch_max;
 
     for (mut note, note_transform) in note_query.iter_mut() {
-        let note_y_position_as_midi =
-            map_to_midi_range(note_transform.translation.y, 0., window.height(), 0, 127);
+        let note_y_position_as_midi = map_to_midi_range(
+            note_transform.translation.y,
+            window_min,
+            window_max,
+            min,
+            max,
+        );
 
         note.pitch = note_y_position_as_midi;
     }
