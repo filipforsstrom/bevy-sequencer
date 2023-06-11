@@ -1,3 +1,7 @@
+mod sequencer;
+
+use sequencer::SequencerPlugin;
+
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
@@ -17,12 +21,11 @@ const GRID_SIZE_Y: usize = 4;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_state::<AppState>()
         .add_plugin(EguiPlugin)
-        .add_plugin(MidiOutputPlugin)
-        .init_resource::<MidiSettings>()
+        .add_plugin(SequencerPlugin)
         .init_resource::<Cartesian>()
         .add_system(ui_example_system)
-        .add_system(connect)
         .add_event::<MidiOutEvent>()
         .add_system(midi_out)
         .add_startup_system(spawn_camera)
@@ -33,13 +36,20 @@ fn main() {
         .add_system(note_pitch)
         .add_system(note_struck)
         .add_system(check_for_collisions)
-        // .add_startup_system(load_image)
+        .add_startup_system(load_assets)
         // .add_plugin(LogDiagnosticsPlugin::default())
         // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_startup_system(cartesian_setup)
         .add_startup_system(sequencer_timer_setup)
         .add_system(tick)
         .run();
+}
+
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
+enum AppState {
+    #[default]
+    Loading,
+    Running,
 }
 
 fn ui_example_system(mut contexts: EguiContexts, output: Res<MidiOutput>) {
@@ -49,18 +59,6 @@ fn ui_example_system(mut contexts: EguiContexts, output: Res<MidiOutput>) {
             ui.label(format!("Port {:?}: {:?}", i, name));
         }
     });
-}
-
-fn connect(output: Res<MidiOutput>, mut midi_settings: ResMut<MidiSettings>) {
-    if midi_settings.connected {
-        return;
-    }
-
-    if let Some((_, port)) = output.ports().get(0) {
-        output.connect(port.clone());
-        midi_settings.connected = true;
-        println!("Connected");
-    }
 }
 
 pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
@@ -114,11 +112,6 @@ impl Default for Notes {
 
         Notes { notes }
     }
-}
-
-#[derive(Resource, Default, Debug)]
-struct MidiSettings {
-    connected: bool,
 }
 
 pub fn spawn_playhead(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
@@ -304,22 +297,8 @@ fn midi_out(
     }
 }
 
-fn load_image(
-    window_query: Query<&Window, With<PrimaryWindow>>,
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
-    let window = window_query.get_single().unwrap();
-
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("images/1234.png"),
-        transform: Transform::from_translation(Vec3::new(
-            window.width() / 2.,
-            window.height() / 2.,
-            0.,
-        )),
-        ..default()
-    });
+fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let handle: Handle<Image> = asset_server.load("images/1234.png");
 }
 
 #[derive(Resource, Default, Debug)]
