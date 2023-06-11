@@ -1,4 +1,4 @@
-use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
+use bevy::{prelude::*, window::PrimaryWindow};
 use rand::random;
 
 const NUMBER_OF_RANDOM_NOTES: usize = 20;
@@ -8,7 +8,6 @@ pub struct NotePlugin;
 impl Plugin for NotePlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(spawn_random_notes)
-            .add_system(get_note_position)
             .add_system(note_pitch);
     }
 }
@@ -26,23 +25,6 @@ pub struct NoteOn {
 
 #[derive(Component)]
 pub struct Collider;
-
-#[derive(Component)]
-pub struct Notes {
-    pub notes: HashMap<u8, bool>,
-}
-
-impl Default for Notes {
-    fn default() -> Self {
-        let mut notes = HashMap::default();
-
-        for i in 0..128 {
-            notes.insert(i, false);
-        }
-
-        Notes { notes }
-    }
-}
 
 pub fn spawn_random_notes(
     mut commands: Commands,
@@ -73,12 +55,6 @@ pub fn spawn_random_notes(
             })
             .insert(NoteOn { on: false })
             .insert(Collider);
-    }
-}
-
-pub fn get_note_position(mut note_query: Query<(&mut Note, &Transform), With<Note>>) {
-    for (mut note, note_transform) in note_query.iter_mut() {
-        note.position = Vec2::new(note_transform.translation.x, note_transform.translation.y);
     }
 }
 
