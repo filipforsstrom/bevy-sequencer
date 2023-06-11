@@ -1,6 +1,6 @@
-use bevy::{prelude::*, window::PrimaryWindow, sprite::collide_aabb::collide};
+use bevy::{prelude::*, sprite::collide_aabb::collide, window::PrimaryWindow};
 
-use super::note::{Note, Collider};
+use super::note::{Collider, Note};
 
 const PLAYHEAD_SPEED: f32 = 500.0;
 
@@ -8,7 +8,7 @@ pub struct PlayheadPlugin;
 
 impl Plugin for PlayheadPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<MidiOutEvent>()
+        app.add_event::<NoteOnEvent>()
             .add_startup_system(spawn_playhead)
             .add_system(playhead_movement)
             .add_system(check_for_collisions)
@@ -34,7 +34,7 @@ impl Default for PlayheadDirection {
     }
 }
 
-pub struct MidiOutEvent(pub Entity);
+pub struct NoteOnEvent(pub Entity);
 
 pub fn spawn_playhead(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
     let window = window_query.get_single().unwrap();
@@ -105,7 +105,7 @@ pub fn playhead_movement(
 }
 
 pub fn note_struck(
-    mut event_midi_out: EventWriter<MidiOutEvent>,
+    mut event_midi_out: EventWriter<NoteOnEvent>,
     playhead_query: Query<&Transform, With<Playhead>>,
     note_query: Query<(Entity, &Transform), With<Note>>,
 ) {
@@ -115,7 +115,7 @@ pub fn note_struck(
                 && playhead_transform.translation.x < note_transform.translation.x + 5.0
             {
                 // println!("{}", note_entity.index());
-                event_midi_out.send(MidiOutEvent(note_entity));
+                event_midi_out.send(NoteOnEvent(note_entity));
             }
         }
     }

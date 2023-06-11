@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_midi::prelude::{MidiOutput, MidiOutputPlugin};
 
-use super::{playhead::MidiOutEvent, note::Note};
+use super::{note::Note, playhead::NoteOnEvent};
 
 pub struct MidiPlugin;
 
@@ -33,7 +33,7 @@ fn connect(output: Res<MidiOutput>, mut midi_settings: ResMut<MidiSettings>) {
 
 fn midi_out(
     note_query: Query<&Note, With<Note>>,
-    mut event_midi_out: EventReader<MidiOutEvent>,
+    mut event_midi_out: EventReader<NoteOnEvent>,
     output: ResMut<MidiOutput>,
 ) {
     for ev in event_midi_out.iter() {
