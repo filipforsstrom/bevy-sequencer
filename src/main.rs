@@ -9,7 +9,6 @@ use bevy::{
     utils::HashMap,
     window::PrimaryWindow,
 };
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_midi::prelude::*;
 use rand::random;
 
@@ -22,10 +21,8 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_state::<AppState>()
-        .add_plugin(EguiPlugin)
         .add_plugin(SequencerPlugin)
         .init_resource::<Cartesian>()
-        .add_system(ui_example_system)
         .add_event::<MidiOutEvent>()
         .add_system(midi_out)
         .add_startup_system(spawn_camera)
@@ -50,15 +47,6 @@ enum AppState {
     #[default]
     Loading,
     Running,
-}
-
-fn ui_example_system(mut contexts: EguiContexts, output: Res<MidiOutput>) {
-    egui::Window::new("Hello").show(contexts.ctx_mut(), |ui| {
-        ui.label("world");
-        for (i, (name, _)) in output.ports().iter().enumerate() {
-            ui.label(format!("Port {:?}: {:?}", i, name));
-        }
-    });
 }
 
 pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
