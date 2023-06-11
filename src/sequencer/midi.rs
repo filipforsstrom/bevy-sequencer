@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_midi::prelude::{MidiOutput, MidiOutputPlugin};
 
-use super::{note::Note, playhead::NoteOnEvent};
+use super::{note::Note, playhead::{NoteOnEvent, NoteOffEvent}};
 
 pub struct MidiPlugin;
 
@@ -10,7 +10,8 @@ impl Plugin for MidiPlugin {
         app.add_plugin(MidiOutputPlugin)
             .init_resource::<MidiSettings>()
             .add_system(connect)
-            .add_system(midi_out);
+            .add_system(midi_out_note_on)
+            .add_system(midi_out_note_off);
     }
 }
 
@@ -31,7 +32,7 @@ fn connect(output: Res<MidiOutput>, mut midi_settings: ResMut<MidiSettings>) {
     }
 }
 
-fn midi_out(
+fn midi_out_note_on(
     note_query: Query<&Note, With<Note>>,
     mut event_midi_out: EventReader<NoteOnEvent>,
     output: ResMut<MidiOutput>,
@@ -40,6 +41,19 @@ fn midi_out(
         if let Ok(note) = note_query.get(ev.0) {
             output.send([0b1001_0000, note.pitch, 127].into()); // Note on, channel 1
             println!("Midi note on: {}", note.pitch);
+            // output.send([0b1001_0000, note.pitch, 0].into()); // Note off, channel 1
+            // println!("Midi note off: {}", note.pitch);
+        }
+    }
+}
+
+fn midi_out_note_off(
+    note_query: Query<&Note, With<Note>>,
+    mut event_midi_out: EventReader<NoteOffEvent>,
+    output: ResMut<MidiOutput>,
+) {
+    for ev in event_midi_out.iter() {
+        if let Ok(note) = note_query.get(ev.0) {
             output.send([0b1001_0000, note.pitch, 0].into()); // Note off, channel 1
             println!("Midi note off: {}", note.pitch);
         }

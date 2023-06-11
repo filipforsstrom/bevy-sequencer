@@ -1,7 +1,7 @@
 use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use rand::random;
 
-const NUMBER_OF_RANDOM_NOTES: usize = 10;
+const NUMBER_OF_RANDOM_NOTES: usize = 20;
 
 pub struct NotePlugin;
 
@@ -17,6 +17,11 @@ impl Plugin for NotePlugin {
 pub struct Note {
     pub position: Vec2,
     pub pitch: u8,
+}
+
+#[derive(Component)]
+pub struct NoteOn {
+    pub on: bool,
 }
 
 #[derive(Component)]
@@ -66,6 +71,7 @@ pub fn spawn_random_notes(
                 position: Vec2::new(1.0, 0.0),
                 pitch: 60,
             })
+            .insert(NoteOn { on: false })
             .insert(Collider);
     }
 }
