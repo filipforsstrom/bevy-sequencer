@@ -175,52 +175,50 @@ pub fn check_for_collisions(
     playhead_query: Query<(Entity, &Transform, &Playhead)>,
     mut collider_query: Query<(Entity, &Transform, &mut Collider), With<Note>>,
 ) {
-    // Loop through all the playheads on screen
     for (playhead_entity, playhead_transform, playhead) in playhead_query.iter() {
-        // Loop through all collidable elements on the screen
         for (collider_entity, collider_transform, mut collider) in collider_query.iter_mut() {
-            if playhead_transform.translation.z == collider_transform.translation.z {
-                let collision = collide(
-                    playhead_transform.translation,
-                    playhead_transform.scale.truncate(),
-                    collider_transform.translation,
-                    collider_transform.scale.truncate(),
-                );
+            if playhead_transform.translation.z != collider_transform.translation.z {
+                continue;
+            }
 
-                match collider.state {
-                    CollisionState::NoCollision => {
-                        if collision.is_some() {
-                            collider.state = CollisionState::CollisionStart;
-                            // println!("Midi note on");
-                            midi_out_note_on.send(NoteOnEvent(collider_entity));
-                        }
+            let collision = collide(
+                playhead_transform.translation,
+                playhead_transform.scale.truncate(),
+                collider_transform.translation,
+                collider_transform.scale.truncate(),
+            );
+
+            match collider.state {
+                CollisionState::NoCollision => {
+                    if collision.is_some() {
+                        collider.state = CollisionState::CollisionStart;
+                        midi_out_note_on.send(NoteOnEvent(collider_entity));
                     }
-                    CollisionState::CollisionStart => {
-                        if collision.is_some() {
-                            collider.state = CollisionState::CollisionContinue;
-                        } else {
-                            // println!("Midi note off");
-                            midi_out_note_off.send(NoteOffEvent(collider_entity));
-                            collider.state = CollisionState::CollisionEnd;
-                        }
+                }
+                CollisionState::CollisionStart => {
+                    if collision.is_some() {
+                        collider.state = CollisionState::CollisionContinue;
+                    } else {
+                        midi_out_note_off.send(NoteOffEvent(collider_entity));
+                        collider.state = CollisionState::CollisionEnd;
                     }
-                    CollisionState::CollisionContinue => {
-                        if collision.is_none() {
-                            // println!("Midi note off");
-                            midi_out_note_off.send(NoteOffEvent(collider_entity));
-                            collider.state = CollisionState::CollisionEnd;
-                        }
+                }
+                CollisionState::CollisionContinue => {
+                    if collision.is_none() {
+                        midi_out_note_off.send(NoteOffEvent(collider_entity));
+                        collider.state = CollisionState::CollisionEnd;
                     }
-                    CollisionState::CollisionEnd => {
-                        if collision.is_none() {
-                            collider.state = CollisionState::NoCollision;
-                        }
+                }
+                CollisionState::CollisionEnd => {
+                    if collision.is_none() {
+                        collider.state = CollisionState::NoCollision;
                     }
                 }
             }
         }
     }
 }
+
 
 pub fn check_note_on(
     mut midi_out_note_on: EventWriter<NoteOnEvent>,

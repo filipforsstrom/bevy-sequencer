@@ -5,7 +5,7 @@ use crate::NUMBER_OF_RANDOM_PLAYHEADS;
 
 use super::sequence::GlobalSequencerSettings;
 
-const NUMBER_OF_RANDOM_NOTES: usize = 30;
+const NUMBER_OF_RANDOM_NOTES: usize = 2;
 
 pub struct NotePlugin;
 
