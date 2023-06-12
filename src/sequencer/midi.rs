@@ -40,7 +40,7 @@ fn midi_out_note_on(
     for ev in event_midi_out.iter() {
         if let Ok(note) = note_query.get(ev.0) {
             output.send([0b1001_0000, note.pitch, 127].into()); // Note on, channel 1
-            println!("Midi note on: {}", note.pitch);
+            // println!("Midi note on: {}", note.pitch);
             // output.send([0b1001_0000, note.pitch, 0].into()); // Note off, channel 1
             // println!("Midi note off: {}", note.pitch);
         }
@@ -55,7 +55,7 @@ fn midi_out_note_off(
     for ev in event_midi_out.iter() {
         if let Ok(note) = note_query.get(ev.0) {
             output.send([0b1001_0000, note.pitch, 0].into()); // Note off, channel 1
-            println!("Midi note off: {}", note.pitch);
+            // println!("Midi note off: {}", note.pitch);
         }
     }
 }

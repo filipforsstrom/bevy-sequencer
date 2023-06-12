@@ -1,9 +1,11 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use rand::random;
 
-use super::sequence::{self, GlobalSequencerSettings};
+use crate::NUMBER_OF_RANDOM_PLAYHEADS;
 
-const NUMBER_OF_RANDOM_NOTES: usize = 8;
+use super::sequence::GlobalSequencerSettings;
+
+const NUMBER_OF_RANDOM_NOTES: usize = 30;
 
 pub struct NotePlugin;
 
@@ -26,7 +28,24 @@ pub struct NoteOn {
 }
 
 #[derive(Component)]
-pub struct Collider;
+pub struct Collider {
+    pub state: CollisionState,
+}
+
+pub enum CollisionState {
+    NoCollision,
+    CollisionStart,
+    CollisionContinue,
+    CollisionEnd,
+}
+
+impl Default for Collider {
+    fn default() -> Self {
+        Collider {
+            state: CollisionState::NoCollision,
+        }
+    }
+}
 
 pub fn spawn_random_notes(
     mut commands: Commands,
@@ -34,29 +53,35 @@ pub fn spawn_random_notes(
 ) {
     let window = window_query.get_single().unwrap();
 
-    for _ in 0..NUMBER_OF_RANDOM_NOTES {
-        let random_x = random::<f32>() * window.width();
-        let random_y = random::<f32>() * window.height();
+    let random_positions = (0..NUMBER_OF_RANDOM_NOTES)
+        .map(|_| Vec2::new(random::<f32>() * window.width(), random::<f32>() * window.height()))
+        .collect::<Vec<Vec2>>();
 
-        commands
-            .spawn(SpriteBundle {
-                transform: Transform {
-                    translation: Vec3::new(random_x, random_y, 0.0),
-                    scale: Vec3::new(120.0, 20.0, 0.0),
+    for playhead in 0..NUMBER_OF_RANDOM_PLAYHEADS {
+        for note in 0..NUMBER_OF_RANDOM_NOTES {
+            let random_x = random_positions[note].x;
+            let random_y = random_positions[note].y;
+
+            commands
+                .spawn(SpriteBundle {
+                    transform: Transform {
+                        translation: Vec3::new(random_x, random_y, playhead as f32),
+                        scale: Vec3::new(120., 20., 0.),
+                        ..default()
+                    },
+                    sprite: Sprite {
+                        color: Color::rgb(0., 1., 0.),
+                        ..default()
+                    },
                     ..default()
-                },
-                sprite: Sprite {
-                    color: Color::rgb(0., 1., 0.),
-                    ..default()
-                },
-                ..default()
-            })
-            .insert(Note {
-                position: Vec2::new(1.0, 0.0),
-                pitch: 60,
-            })
-            .insert(NoteOn { on: false })
-            .insert(Collider);
+                })
+                .insert(Note {
+                    position: Vec2::new(1., 0.),
+                    pitch: 60,
+                })
+                .insert(NoteOn { on: false })
+                .insert(Collider { ..default() });
+        }
     }
 }
 

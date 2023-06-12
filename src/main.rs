@@ -2,12 +2,9 @@ mod sequencer;
 
 use sequencer::SequencerPlugin;
 
-use bevy::{
-    prelude::*,
-    window::PrimaryWindow,
-};
+use bevy::{prelude::*, window::PrimaryWindow};
 
-
+const NUMBER_OF_RANDOM_PLAYHEADS: usize = 3;
 const GRID_SIZE_X: usize = 4;
 const GRID_SIZE_Y: usize = 4;
 
@@ -21,9 +18,9 @@ fn main() {
         .add_startup_system(load_assets)
         // .add_plugin(LogDiagnosticsPlugin::default())
         // .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .add_startup_system(cartesian_setup)
-        .add_startup_system(sequencer_timer_setup)
-        .add_system(tick)
+        // .add_startup_system(cartesian_setup)
+        // .add_startup_system(sequencer_timer_setup)
+        // .add_system(tick)
         .run();
 }
 

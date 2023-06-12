@@ -1,8 +1,11 @@
 use bevy::{prelude::*, sprite::collide_aabb::collide, window::PrimaryWindow};
+use rand::{random, Rng};
+
+use crate::{sequencer::note::CollisionState, NUMBER_OF_RANDOM_PLAYHEADS};
 
 use super::note::{Collider, Note, NoteOn};
 
-const PLAYHEAD_SPEED: f32 = 500.0;
+const DEFAULT_PLAYHEAD_SPEED: f32 = 300.0;
 
 pub struct PlayheadPlugin;
 
@@ -10,7 +13,7 @@ impl Plugin for PlayheadPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<NoteOnEvent>()
             .add_event::<NoteOffEvent>()
-            .add_startup_system(spawn_playhead)
+            .add_startup_system(spawn_random_playheads)
             .add_system(playhead_movement)
             .add_system(check_for_collisions)
             // .add_system(note_struck)
@@ -22,6 +25,17 @@ impl Plugin for PlayheadPlugin {
 pub struct Playhead {
     pub direction: PlayheadDirection,
     pub current_direction: PlayheadDirection,
+    pub speed: f32,
+}
+
+impl Default for Playhead {
+    fn default() -> Self {
+        Playhead {
+            direction: PlayheadDirection::Right,
+            current_direction: PlayheadDirection::Right,
+            speed: DEFAULT_PLAYHEAD_SPEED,
+        }
+    }
 }
 
 pub enum PlayheadDirection {
@@ -40,28 +54,59 @@ pub struct NoteOnEvent(pub Entity);
 
 pub struct NoteOffEvent(pub Entity);
 
-pub fn spawn_playhead(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
+// pub fn spawn_playhead(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
+//     let window = window_query.get_single().unwrap();
+//     let height = window.height();
+
+//     // Rectangle
+//     commands
+//         .spawn(SpriteBundle {
+//             transform: Transform {
+//                 translation: Vec3::new(0., height / 2., 0.),
+//                 scale: Vec3::new(5.0, height, 0.0),
+//                 ..default()
+//             },
+//             sprite: Sprite {
+//                 color: Color::rgb(1., 0., 0.),
+//                 ..default()
+//             },
+//             ..default()
+//         })
+//         .insert(Playhead { ..default() });
+// }
+
+pub fn spawn_random_playheads(
+    mut commands: Commands,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+) {
     let window = window_query.get_single().unwrap();
     let height = window.height();
+    let mut rng = rand::thread_rng();
+    let lower_bound = 100.;
+    let upper_bound = 300.;
 
-    // Rectangle
-    commands
-        .spawn(SpriteBundle {
-            transform: Transform {
-                translation: Vec3::new(0., height / 2., 0.),
-                scale: Vec3::new(5.0, height, 0.0),
+    for playhead in 0..NUMBER_OF_RANDOM_PLAYHEADS {
+        let speed = rng.gen_range(lower_bound..=upper_bound);
+        let z = playhead as f32;
+
+        commands
+            .spawn(SpriteBundle {
+                transform: Transform {
+                    translation: Vec3::new(0., height / 2., z),
+                    scale: Vec3::new(5.0, height, 0.0),
+                    ..default()
+                },
+                sprite: Sprite {
+                    color: Color::rgb(1., 0., 0.),
+                    ..default()
+                },
                 ..default()
-            },
-            sprite: Sprite {
-                color: Color::rgb(1., 0., 0.),
+            })
+            .insert(Playhead {
+                speed: speed,
                 ..default()
-            },
-            ..default()
-        })
-        .insert(Playhead {
-            direction: PlayheadDirection::Pendulum,
-            current_direction: PlayheadDirection::Right,
-        });
+            });
+    }
 }
 
 pub fn playhead_movement(
@@ -74,14 +119,14 @@ pub fn playhead_movement(
     for (mut transform, mut playhead) in playhead_query.iter_mut() {
         match &playhead.direction {
             PlayheadDirection::Right => {
-                transform.translation.x += PLAYHEAD_SPEED * time.delta_seconds();
+                transform.translation.x += playhead.speed * time.delta_seconds();
 
                 if transform.translation.x > window.width() {
                     transform.translation.x = 0.;
                 }
             }
             PlayheadDirection::Left => {
-                transform.translation.x -= PLAYHEAD_SPEED * time.delta_seconds();
+                transform.translation.x -= playhead.speed * time.delta_seconds();
 
                 if transform.translation.x > 0. {
                     transform.translation.x = window.width();
@@ -89,14 +134,14 @@ pub fn playhead_movement(
             }
             PlayheadDirection::Pendulum => match &playhead.current_direction {
                 PlayheadDirection::Right => {
-                    transform.translation.x += PLAYHEAD_SPEED * time.delta_seconds();
+                    transform.translation.x += playhead.speed * time.delta_seconds();
 
                     if transform.translation.x > window.width() {
                         playhead.current_direction = PlayheadDirection::Left;
                     }
                 }
                 PlayheadDirection::Left => {
-                    transform.translation.x -= PLAYHEAD_SPEED * time.delta_seconds();
+                    transform.translation.x -= playhead.speed * time.delta_seconds();
 
                     if transform.translation.x < 0. {
                         playhead.current_direction = PlayheadDirection::Right;
@@ -124,27 +169,54 @@ pub fn playhead_movement(
 //     }
 // }
 
-fn check_for_collisions(
-    playheads_query: Query<(Entity, &Transform), With<Playhead>>,
-    mut collider_query: Query<(Entity, &Transform, &mut NoteOn), With<Collider>>,
+pub fn check_for_collisions(
+    mut midi_out_note_on: EventWriter<NoteOnEvent>,
+    mut midi_out_note_off: EventWriter<NoteOffEvent>,
+    playhead_query: Query<(Entity, &Transform, &Playhead)>,
+    mut collider_query: Query<(Entity, &Transform, &mut Collider), With<Note>>,
 ) {
-    // Loop through all the projectiles on screen
-    for (playhead_entity, playhead_transform) in &playheads_query {
+    // Loop through all the playheads on screen
+    for (playhead_entity, playhead_transform, playhead) in playhead_query.iter() {
         // Loop through all collidable elements on the screen
-        // TODO: Figure out how to flatten this - 2 for loops no bueno
-        for (collider_entity, collider_transform, mut note_on) in collider_query.iter_mut() {
-            let collision = collide(
-                playhead_transform.translation,
-                playhead_transform.scale.truncate(),
-                collider_transform.translation,
-                collider_transform.scale.truncate(),
-            );
+        for (collider_entity, collider_transform, mut collider) in collider_query.iter_mut() {
+            if playhead_transform.translation.z == collider_transform.translation.z {
+                let collision = collide(
+                    playhead_transform.translation,
+                    playhead_transform.scale.truncate(),
+                    collider_transform.translation,
+                    collider_transform.scale.truncate(),
+                );
 
-            if collision.is_some() && note_on.on == false {
-                note_on.on = true;
-            } else if collision.is_none() && note_on.on == true {
-                note_on.on = false;
-                // event_midi_out.send(NoteOnEvent(collider_entity));
+                match collider.state {
+                    CollisionState::NoCollision => {
+                        if collision.is_some() {
+                            collider.state = CollisionState::CollisionStart;
+                            // println!("Midi note on");
+                            midi_out_note_on.send(NoteOnEvent(collider_entity));
+                        }
+                    }
+                    CollisionState::CollisionStart => {
+                        if collision.is_some() {
+                            collider.state = CollisionState::CollisionContinue;
+                        } else {
+                            // println!("Midi note off");
+                            midi_out_note_off.send(NoteOffEvent(collider_entity));
+                            collider.state = CollisionState::CollisionEnd;
+                        }
+                    }
+                    CollisionState::CollisionContinue => {
+                        if collision.is_none() {
+                            // println!("Midi note off");
+                            midi_out_note_off.send(NoteOffEvent(collider_entity));
+                            collider.state = CollisionState::CollisionEnd;
+                        }
+                    }
+                    CollisionState::CollisionEnd => {
+                        if collision.is_none() {
+                            collider.state = CollisionState::NoCollision;
+                        }
+                    }
+                }
             }
         }
     }
@@ -158,10 +230,10 @@ pub fn check_note_on(
     for (entity, note) in note_query.iter() {
         if note.on {
             midi_out_note_on.send(NoteOnEvent(entity));
-            println!("Note on!");
+            // println!("Note on entity: {}.", entity.index());
         } else if !note.on {
             midi_out_note_off.send(NoteOffEvent(entity));
-            println!("Note off!");
+            // println!("Note off entity: {}.", entity.index());
         }
     }
 }
