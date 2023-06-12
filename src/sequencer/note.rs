@@ -5,7 +5,7 @@ use crate::NUMBER_OF_RANDOM_PLAYHEADS;
 
 use super::sequence::GlobalSequencerSettings;
 
-const NUMBER_OF_RANDOM_NOTES: usize = 2;
+const NUMBER_OF_RANDOM_NOTES: usize = 3;
 
 pub struct NotePlugin;
 
@@ -20,11 +20,6 @@ impl Plugin for NotePlugin {
 pub struct Note {
     pub position: Vec2,
     pub pitch: u8,
-}
-
-#[derive(Component)]
-pub struct NoteOn {
-    pub on: bool,
 }
 
 #[derive(Component)]
@@ -54,7 +49,12 @@ pub fn spawn_random_notes(
     let window = window_query.get_single().unwrap();
 
     let random_positions = (0..NUMBER_OF_RANDOM_NOTES)
-        .map(|_| Vec2::new(random::<f32>() * window.width(), random::<f32>() * window.height()))
+        .map(|_| {
+            Vec2::new(
+                random::<f32>() * window.width(),
+                random::<f32>() * window.height(),
+            )
+        })
         .collect::<Vec<Vec2>>();
 
     for playhead in 0..NUMBER_OF_RANDOM_PLAYHEADS {
@@ -79,7 +79,6 @@ pub fn spawn_random_notes(
                     position: Vec2::new(1., 0.),
                     pitch: 60,
                 })
-                .insert(NoteOn { on: false })
                 .insert(Collider { ..default() });
         }
     }

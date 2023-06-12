@@ -1,9 +1,9 @@
 use bevy::{prelude::*, sprite::collide_aabb::collide, window::PrimaryWindow};
-use rand::{random, Rng};
+use rand::Rng;
 
 use crate::{sequencer::note::CollisionState, NUMBER_OF_RANDOM_PLAYHEADS};
 
-use super::note::{Collider, Note, NoteOn};
+use super::note::{Collider, Note};
 
 const DEFAULT_PLAYHEAD_SPEED: f32 = 300.0;
 
@@ -15,9 +15,8 @@ impl Plugin for PlayheadPlugin {
             .add_event::<NoteOffEvent>()
             .add_startup_system(spawn_random_playheads)
             .add_system(playhead_movement)
-            .add_system(check_for_collisions)
-            // .add_system(note_struck)
-            .add_system(check_note_on);
+            .add_system(check_for_collisions);
+        // .add_system(note_struck)
     }
 }
 
@@ -53,27 +52,6 @@ impl Default for PlayheadDirection {
 pub struct NoteOnEvent(pub Entity);
 
 pub struct NoteOffEvent(pub Entity);
-
-// pub fn spawn_playhead(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
-//     let window = window_query.get_single().unwrap();
-//     let height = window.height();
-
-//     // Rectangle
-//     commands
-//         .spawn(SpriteBundle {
-//             transform: Transform {
-//                 translation: Vec3::new(0., height / 2., 0.),
-//                 scale: Vec3::new(5.0, height, 0.0),
-//                 ..default()
-//             },
-//             sprite: Sprite {
-//                 color: Color::rgb(1., 0., 0.),
-//                 ..default()
-//             },
-//             ..default()
-//         })
-//         .insert(Playhead { ..default() });
-// }
 
 pub fn spawn_random_playheads(
     mut commands: Commands,
@@ -153,29 +131,13 @@ pub fn playhead_movement(
     }
 }
 
-// pub fn note_struck(
-//     playhead_query: Query<&Transform, With<Playhead>>,
-//     note_query: Query<(Entity, &Transform), With<Note>>,
-// ) {
-//     if let Ok(playhead_transform) = playhead_query.get_single() {
-//         for (note_entity, note_transform) in note_query.iter() {
-//             if playhead_transform.translation.x > note_transform.translation.x - 5.0
-//                 && playhead_transform.translation.x < note_transform.translation.x + 5.0
-//             {
-//                 // println!("{}", note_entity.index());
-//                 // event_midi_out.send(NoteOnEvent(note_entity));
-//             }
-//         }
-//     }
-// }
-
 pub fn check_for_collisions(
     mut midi_out_note_on: EventWriter<NoteOnEvent>,
     mut midi_out_note_off: EventWriter<NoteOffEvent>,
-    playhead_query: Query<(Entity, &Transform, &Playhead)>,
+    playhead_query: Query<&Transform, With<Playhead>>,
     mut collider_query: Query<(Entity, &Transform, &mut Collider), With<Note>>,
 ) {
-    for (playhead_entity, playhead_transform, playhead) in playhead_query.iter() {
+    for playhead_transform in playhead_query.iter() {
         for (collider_entity, collider_transform, mut collider) in collider_query.iter_mut() {
             if playhead_transform.translation.z != collider_transform.translation.z {
                 continue;
@@ -215,23 +177,6 @@ pub fn check_for_collisions(
                     }
                 }
             }
-        }
-    }
-}
-
-
-pub fn check_note_on(
-    mut midi_out_note_on: EventWriter<NoteOnEvent>,
-    mut midi_out_note_off: EventWriter<NoteOffEvent>,
-    note_query: Query<(Entity, &NoteOn), (Changed<NoteOn>, With<Note>)>,
-) {
-    for (entity, note) in note_query.iter() {
-        if note.on {
-            midi_out_note_on.send(NoteOnEvent(entity));
-            // println!("Note on entity: {}.", entity.index());
-        } else if !note.on {
-            midi_out_note_off.send(NoteOffEvent(entity));
-            // println!("Note off entity: {}.", entity.index());
         }
     }
 }
