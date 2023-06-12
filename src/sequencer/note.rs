@@ -18,7 +18,6 @@ impl Plugin for NotePlugin {
 
 #[derive(Component)]
 pub struct Note {
-    pub position: Vec2,
     pub pitch: u8,
 }
 
@@ -75,10 +74,7 @@ pub fn spawn_random_notes(
                     },
                     ..default()
                 })
-                .insert(Note {
-                    position: Vec2::new(1., 0.),
-                    pitch: 60,
-                })
+                .insert(Note { pitch: 60 })
                 .insert(Collider { ..default() });
         }
     }
