@@ -2,7 +2,11 @@ mod sequencer;
 
 use sequencer::SequencerPlugin;
 
-use bevy::{prelude::*, window::PrimaryWindow, diagnostic::{LogDiagnosticsPlugin, FrameTimeDiagnosticsPlugin}};
+use bevy::{
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    prelude::*,
+    window::PrimaryWindow,
+};
 
 const NUMBER_OF_RANDOM_PLAYHEADS: usize = 2;
 const GRID_SIZE_X: usize = 4;
@@ -16,8 +20,8 @@ fn main() {
         .init_resource::<Cartesian>()
         .add_startup_system(spawn_camera)
         .add_startup_system(load_assets)
-        .add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        // .add_plugin(LogDiagnosticsPlugin::default())
+        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         // .add_startup_system(cartesian_setup)
         // .add_startup_system(sequencer_timer_setup)
         // .add_system(tick)
